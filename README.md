@@ -224,9 +224,6 @@ CUET_Placement_Network/
 │   ├── uploads/                     # Uploaded files (resumes/, companies/, profiles/) — gitignored
 │   └── server.js                    # Entry point (loads env, connects DB, starts Express)
 │
-├── docs/                           # Software engineering process documentation (requirements,
-│                                    # architecture, use cases, DB/API design, sprint & feature reports)
-│
 ├── .gitignore
 └── README.md
 ```
@@ -388,7 +385,7 @@ Job        → has many → MatchScore, SavedJob
 User (admin) → has many → Resource, and verifies RecruiterProfiles
 ```
 
-Full ER design and rationale: [`docs/Prompt04_ERDiagram.md`](./docs/Prompt04_ERDiagram.md) and [`docs/Prompt04.1_DatabaseDesign.md`](./docs/Prompt04.1_DatabaseDesign.md).
+The relationships above reflect the live Sequelize model associations (`server/src/models/index.js`).
 
 ---
 
@@ -461,13 +458,13 @@ The backend exposes a REST API under `/api`, grouped by resource:
 - `/api/notifications` — in-app notifications
 - `/api/resources` — career resources
 
-A health check is available at `GET /api/health`. Full endpoint-level design: [`docs/Prompt05_APIDesign.md`](./docs/Prompt05_APIDesign.md).
+A health check is available at `GET /api/health`.
 
 ---
 
 ## Testing
 
-No automated test suite (unit/integration test framework) is currently part of this project. Verification was instead performed as a **manual, live integration QA pass** against the real running application and database — documented in [`docs/Integration_QA_Report.md`](./docs/Integration_QA_Report.md). Summary of what was verified:
+No automated test suite (unit/integration test framework) is currently part of this project. Verification was instead performed as a **manual, live integration QA pass** against the real running application and database. Summary of what was verified:
 
 - **Authentication** — role-correct login/logout, cross-role route protection (frontend and backend independently), invalid-token handling
 - **Student workflow** — apply flow, duplicate-application blocking, resume-at-apply-time integrity, notification on apply
@@ -479,15 +476,15 @@ No automated test suite (unit/integration test framework) is currently part of t
 - **API/security/data hygiene** — no bypassed service layer, no hardcoded secrets/IDs, sanitized error responses, `.env` gitignored
 - **Responsive layout** — swept at `1440px`, `1280px`, `1024px`, `768px`, `390px`, `375px`
 
-Result at last pass: **zero critical issues**, one real backend bug found and fixed (a dead/hardcoded `totalApplications: 0` stub in the student dashboard summary). See the full report for details.
+Result at last pass: **zero critical issues**, one real backend bug found and fixed (a dead/hardcoded `totalApplications: 0` stub in the student dashboard summary).
 
-A broader, earlier full-project audit (architecture, backend, frontend, UX, and landing page review) is documented in [`docs/Project_Audit_Report.md`](./docs/Project_Audit_Report.md).
+An earlier, broader full-project audit also covered architecture, backend, frontend, UX, and landing page quality across the codebase.
 
 ---
 
 ## Responsive Support
 
-The application has been checked across desktop, tablet, and mobile viewport widths, specifically: **1440px, 1280px, 1024px, 768px, 390px, and 375px** (see [`docs/Integration_QA_Report.md`](./docs/Integration_QA_Report.md)).
+The application has been checked across desktop, tablet, and mobile viewport widths, specifically: **1440px, 1280px, 1024px, 768px, 390px, and 375px**.
 
 ---
 
@@ -544,9 +541,3 @@ The following are **not implemented** — they are possible directions for futur
 PWA conversion has **not** been completed. The application is a standard React SPA and is not currently installable as a PWA.
 
 **Future improvement:** Progressive Web App support (manifest, service worker, offline support) can be added later.
-
----
-
-## Documentation
-
-Detailed software-engineering process documentation — requirements, architecture, use-case model, ER diagram, database and API design, project structure, and phase-by-phase implementation/feature reports — is available in [`docs/`](./docs).
