@@ -1,0 +1,300 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Sparkles, FileText, Target, Search } from 'lucide-react';
+import { Card, CardBody } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { CompanyLogo } from '@/components/shared/CompanyLogo';
+import { ResumeAnalysisModal } from '@/features/student/components/ResumeAnalysisModal';
+import { JobMatchModal } from '@/features/student/components/JobMatchModal';
+import { useToast } from '@/hooks/useToast';
+import {
+  useStudentProfile,
+  useResumeAnalysis,
+  useAnalyzeResume,
+  useJobs,
+  useJobMatch,
+  useGenerateJobMatch,
+} from '@/features/student/studentQueries';
+
+const fadeUp = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+};
+
+function ToolCard({ icon: Icon, title, description, children }) {
+  return (
+    <Card>
+      <CardBody className="flex h-full flex-col gap-3 p-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} aria-hidden="true" />
+        </div>
+        <h2 className="text-base font-semibold text-text">{title}</h2>
+        <p className="flex-1 text-sm leading-relaxed text-text-muted">{description}</p>
+        {children}
+      </CardBody>
+    </Card>
+  );
+}
+
+export function StudentAiToolsPage() {
+  const { showToast } = useToast();
+
+  const { data: profile } = useStudentProfile();
+  const currentResumeId = profile?.currentResumeId;
+  const hasResume = Boolean(currentResumeId);
+
+  // Resume Review
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const analyzeResume = useAnalyzeResume();
+  const {
+    data: existingAnalysis,
+    isLoading: isAnalysisLoading,
+    error: analysisFetchError,
+  } = useResumeAnalysis(currentResumeId, { enabled: reviewOpen });
+
+  const analysisNotYetCreated = analysisFetchError?.response?.status === 404;
+  const analysis = existingAnalysis ?? analyzeResume.data;
+  const isAnalyzing = isAnalysisLoading || analyzeResume.isPending;
+  const analysisFailed = analyzeResume.isError || (Boolean(analysisFetchError) && !analysisNotYetCreated);
+
+  const runAnalysis = useCallback(
+    (resumeId) => {
+      analyzeResume.mutate(resumeId, {
+        onError: (error) => {
+          const message = error.response?.data?.message ?? 'Failed to analyze resume.';
+          showToast({ variant: 'danger', title: 'Analysis failed', description: message });
+        },
+      });
+    },
+    [analyzeResume, showToast]
+  );
+
+  const hasAutoAnalyzed = useRef(false);
+
+  useEffect(() => {
+    if (!reviewOpen) {
+      hasAutoAnalyzed.current = false;
+      return;
+    }
+    if (analysisNotYetCreated && !hasAutoAnalyzed.current) {
+      hasAutoAnalyzed.current = true;
+      runAnalysis(currentResumeId);
+    }
+  }, [reviewOpen, analysisNotYetCreated, currentResumeId, runAnalysis]);
+
+  function handleOpenReview() {
+    analyzeResume.reset();
+    setReviewOpen(true);
+  }
+
+  function handleCloseReview(open) {
+    setReviewOpen(open);
+    if (!open) analyzeResume.reset();
+  }
+
+  // AI Job Match
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [jobSearchInput, setJobSearchInput] = useState('');
+  const [jobSearch, setJobSearch] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [matchModalOpen, setMatchModalOpen] = useState(false);
+
+  const { data: jobSearchData, isLoading: isJobSearchLoading } = useJobs(
+    pickerOpen ? { search: jobSearch || undefined, limit: 8 } : undefined
+  );
+  const generateMatch = useGenerateJobMatch();
+
+  const {
+    data: existingMatch,
+    isLoading: isMatchLoading,
+    error: matchFetchError,
+  } = useJobMatch(selectedJobId, { enabled: matchModalOpen });
+
+  const matchNotYetGenerated = matchFetchError?.response?.status === 404;
+  const needsAnalysis =
+    matchFetchError?.response?.status === 409 || generateMatch.error?.response?.status === 409;
+  const match = existingMatch ?? generateMatch.data;
+  const isCheckingMatch = isMatchLoading || generateMatch.isPending;
+  const matchFailed =
+    (generateMatch.isError && !needsAnalysis) ||
+    (Boolean(matchFetchError) && !matchNotYetGenerated && !needsAnalysis);
+
+  const runGenerateMatch = useCallback(
+    (jobId) => {
+      generateMatch.mutate(jobId, {
+        onError: (error) => {
+          if (error.response?.status === 409) return;
+          const message = error.response?.data?.message ?? 'Failed to check job match.';
+          showToast({ variant: 'danger', title: 'Match check failed', description: message });
+        },
+      });
+    },
+    [generateMatch, showToast]
+  );
+
+  const hasAutoGeneratedMatch = useRef(false);
+
+  useEffect(() => {
+    if (!matchModalOpen) {
+      hasAutoGeneratedMatch.current = false;
+      return;
+    }
+    if (matchNotYetGenerated && !hasAutoGeneratedMatch.current) {
+      hasAutoGeneratedMatch.current = true;
+      runGenerateMatch(selectedJobId);
+    }
+  }, [matchModalOpen, matchNotYetGenerated, selectedJobId, runGenerateMatch]);
+
+  function handleOpenPicker() {
+    setJobSearchInput('');
+    setJobSearch('');
+    setPickerOpen(true);
+  }
+
+  function handleSelectJob(jobId) {
+    setSelectedJobId(jobId);
+    setPickerOpen(false);
+    generateMatch.reset();
+    setMatchModalOpen(true);
+  }
+
+  function handleCloseMatch(open) {
+    setMatchModalOpen(open);
+    if (!open) generateMatch.reset();
+  }
+
+  const jobResults = jobSearchData?.jobs ?? [];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <motion.div {...fadeUp}>
+        <h1 className="text-xl font-semibold text-text">AI Career Tools</h1>
+        <p className="mt-1 text-sm text-text-muted">
+          Use AI to improve your resume, prepare for interviews, and make better career decisions.
+        </p>
+      </motion.div>
+
+      <motion.div {...fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ToolCard
+          icon={FileText}
+          title="Resume Review"
+          description="Get AI-powered feedback on your resume and discover areas that could be improved."
+        >
+          {!hasResume ? (
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-4 text-center">
+              <p className="text-sm font-medium text-text">No resume uploaded yet.</p>
+              <p className="text-xs text-text-muted">Upload your resume to use AI Resume Review.</p>
+              <Link to="/student/resumes" className="mt-1">
+                <Button variant="outline" size="sm">
+                  Go to My Resume
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <Button leftIcon={Sparkles} onClick={handleOpenReview}>
+              Review My Resume
+            </Button>
+          )}
+        </ToolCard>
+
+        <ToolCard
+          icon={Target}
+          title="AI Job Match"
+          description="Compare your resume with a specific job and understand how well your experience matches the role."
+        >
+          {!hasResume ? (
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-4 text-center">
+              <p className="text-sm font-medium text-text">Resume required</p>
+              <Link to="/student/resumes" className="mt-1">
+                <Button variant="outline" size="sm">
+                  Go to My Resume
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <Button leftIcon={Sparkles} onClick={handleOpenPicker}>
+              Match With a Job
+            </Button>
+          )}
+        </ToolCard>
+      </motion.div>
+
+      <ResumeAnalysisModal
+        open={reviewOpen}
+        onOpenChange={handleCloseReview}
+        analysis={analysis}
+        isLoading={isAnalyzing}
+        isError={analysisFailed}
+        onRetry={() => runAnalysis(currentResumeId)}
+      />
+
+      <Modal open={pickerOpen} onOpenChange={setPickerOpen} title="Select a job to match against" size="default">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            setJobSearch(jobSearchInput);
+          }}
+          className="relative"
+        >
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
+          <Input
+            autoFocus
+            className="pl-9"
+            placeholder="Search jobs by title or company..."
+            value={jobSearchInput}
+            onChange={(event) => setJobSearchInput(event.target.value)}
+          />
+        </form>
+
+        <div className="mt-4 flex max-h-80 flex-col gap-1.5 overflow-y-auto">
+          {isJobSearchLoading ? (
+            Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-14 w-full rounded-lg" />)
+          ) : jobResults.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <p className="text-sm font-medium text-text">No jobs found.</p>
+              <Link to="/student/jobs">
+                <Button variant="outline" size="sm">
+                  Browse Jobs
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            jobResults.map((job) => (
+              <button
+                key={job.jobId}
+                type="button"
+                onClick={() => handleSelectJob(job.jobId)}
+                className="flex items-center gap-3 rounded-lg p-2.5 text-left transition-colors duration-100 hover:bg-surface-muted"
+              >
+                <CompanyLogo name={job.Company?.name} logoPath={job.Company?.logoPath} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-text">{job.title}</p>
+                  <p className="truncate text-xs text-text-muted">{job.Company?.name}</p>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </Modal>
+
+      <JobMatchModal
+        open={matchModalOpen}
+        onOpenChange={handleCloseMatch}
+        match={match}
+        isLoading={isCheckingMatch}
+        isError={matchFailed}
+        needsAnalysis={needsAnalysis}
+        onRetry={() => runGenerateMatch(selectedJobId)}
+      />
+    </div>
+  );
+}

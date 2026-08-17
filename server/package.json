@@ -1,0 +1,40 @@
+{
+  "name": "cuet-placement-network-server",
+  "version": "1.0.0",
+  "description": "Backend API for the CUET Placement Network",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed:companies": "node src/seeders/seedCompanies.js",
+    "seed:jobs": "node src/seeders/seedJobs.js",
+    "seed:resources": "node src/seeders/seedResources.js",
+    "seed:students": "node src/seeders/seedStudents.js",
+    "seed:recruiters": "node src/seeders/seedRecruiters.js",
+    "seed:reassign-jobs": "node src/seeders/reassignJobOwners.js",
+    "seed:job-status-mix": "node src/seeders/seedJobStatusMix.js",
+    "seed:resumes": "node src/seeders/seedResumes.js",
+    "seed:applications": "node src/seeders/seedApplications.js",
+    "seed": "npm run seed:companies && npm run seed:recruiters && npm run seed:jobs && npm run seed:reassign-jobs && npm run seed:job-status-mix && npm run seed:students && npm run seed:resumes && npm run seed:applications && npm run seed:resources"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^2.17.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "mysql2": "^3.23.2",
+    "pdf-parse": "^2.4.5",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
