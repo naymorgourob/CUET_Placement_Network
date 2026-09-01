@@ -18,6 +18,7 @@ server/uploads/profiles/*
 # Build output
 client/dist/
 client/dist-ssr/
+client/dev-dist/
 server/dist/
 build/
 

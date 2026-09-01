@@ -10,7 +10,7 @@ dotenv.config({ quiet: true });
 const { default: db } = await import('../models/index.js');
 const { jobsByCompany } = await import('./data/jobs.data.js');
 
-const SEED_RECRUITER_EMAIL = 'recruiterA.f1@example.com';
+const SEED_RECRUITER_EMAIL = 'recruiter.bkash@example.com';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -25,11 +25,13 @@ function deadlineForIndex(index) {
 async function run() {
   await db.sequelize.authenticate();
 
-  const recruiter = await db.User.findOne({ where: { email: SEED_RECRUITER_EMAIL, role: 'recruiter' } });
+  const recruiter =
+    (await db.User.findOne({ where: { email: SEED_RECRUITER_EMAIL, role: 'recruiter' } })) ||
+    (await db.User.findOne({ where: { role: 'recruiter' } }));
 
   if (!recruiter) {
     throw new Error(
-      `Seed recruiter account (${SEED_RECRUITER_EMAIL}) not found. This seed reuses an existing verified recruiter as the posting user for demo jobs and does not create new accounts.`
+      `Seed recruiter account not found. This seed reuses an existing verified recruiter as the posting user for demo jobs and does not create new accounts.`
     );
   }
 

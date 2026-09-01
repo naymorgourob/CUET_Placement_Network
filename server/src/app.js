@@ -22,7 +22,25 @@ import { notFound } from './middlewares/notFound.middleware.js';
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL }));
+const allowedOrigins = new Set([
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+].filter(Boolean));
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use('/uploads', express.static(path.resolve(process.env.UPLOAD_PATH || 'uploads')));
 
