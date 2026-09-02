@@ -7,11 +7,7 @@ node_modules/
 .env.*.bak*
 !.env.example
 
-# Uploaded files (user data, not source code)
-server/uploads/resumes/*
-!server/uploads/resumes/.gitkeep
-server/uploads/companies/*
-!server/uploads/companies/.gitkeep
+# Uploaded files
 server/uploads/profiles/*
 !server/uploads/profiles/.gitkeep
 

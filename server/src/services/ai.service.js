@@ -10,14 +10,9 @@ import {
 } from '../constants/resumeImprovementPrompt.js';
 import { buildJobMatchPrompt, buildJobMatchResponseSchema } from '../constants/jobMatchPrompt.js';
 
-// 'gemini-2.5-flash' (a pinned version string) returns 404 "no longer
-// available to new users" for newer API keys even though it still appears
-// in models.list() — a known Gemini API quirk, confirmed live against the
-// real API during verification. 'gemini-flash-latest' is Google's rolling
-// alias for their current recommended fast model and was confirmed working
-// live — use the alias rather than a version pin so this doesn't silently
-// break again the next time a pinned version is deprecated for new keys.
-const GEMINI_MODEL = 'gemini-flash-latest';
+// 'gemini-3.5-flash-lite' is the recommended fast, high-throughput model
+// with reliable structured-output support and ultra-low latency.
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 // Resume text is bounded before it ever reaches Gemini — this is a
 // character cap on the *extracted* text (not the PDF file size, which
